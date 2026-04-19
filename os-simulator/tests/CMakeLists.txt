@@ -60,3 +60,15 @@ target_link_libraries(test_scheduler
     scheduler_lib
 )
 add_test(NAME SchedulerTests COMMAND test_scheduler)
+
+# ── Test: MemoryManager (Phase 4) ───────────────────────────
+add_executable(test_memory_manager test_memory_manager.cpp)
+target_include_directories(test_memory_manager PRIVATE ${ENGINE_INCLUDE_DIR})
+target_link_libraries(test_memory_manager
+    PRIVATE
+    GTest::gtest_main
+    core_lib
+    process_manager_lib
+    memory_manager_lib
+)
+add_test(NAME MemoryManagerTests COMMAND test_memory_manager)

@@ -1,8 +1,9 @@
 /**
  * main.cpp — Mini OS Kernel Simulator Entry Point
  *
- * Phase 2: Registers the ProcessManager module, creates sample processes,
- * and demonstrates the process lifecycle (creation → admission → ready queue).
+ * Phase 4: Registers ProcessManager, Scheduler, and MemoryManager modules.
+ * Creates sample processes and demonstrates process lifecycle,
+ * CPU scheduling, and memory management with page fault handling.
  */
 
 #include <iostream>
@@ -15,6 +16,7 @@
 #include "core/SimEnums.h"
 #include "modules/process/ProcessManager.h"
 #include "modules/process/ProcessSpec.h"
+#include "modules/memory/MemoryManager.h"
 
 int main() {
     std::cout << "========================================" << std::endl;
@@ -27,9 +29,14 @@ int main() {
     EventBus bus;
     ClockController clock(state, bus);
 
-    // ── Phase 2: Register Process Manager ────────────────────
+    // ── Register OS modules (order matters: ProcMgr → Scheduler → MemMgr) ──
     auto procMgr = std::make_shared<ProcessManager>();
     clock.registerModule(procMgr);
+
+    // ── Phase 4: Register Memory Manager ────────────────────
+    auto memMgr = std::make_shared<MemoryManager>();
+    memMgr->initializeFrameTable(state, 16);  // 16 frames (customizable)
+    clock.registerModule(memMgr);
 
     // Print initial state
     std::cout << "Status:       " << toString(state.status) << std::endl;
@@ -54,6 +61,12 @@ int main() {
         std::cout << "  [Event] " << e.eventType << ": " << e.description << std::endl;
     });
     bus.subscribe(EventTypes::TICK_ADVANCED, [](const SimEvent& e) {
+        std::cout << "  [Event] " << e.eventType << ": " << e.description << std::endl;
+    });
+    bus.subscribe(EventTypes::PAGE_FAULT, [](const SimEvent& e) {
+        std::cout << "  [Event] " << e.eventType << ": " << e.description << std::endl;
+    });
+    bus.subscribe(EventTypes::PAGE_REPLACED, [](const SimEvent& e) {
         std::cout << "  [Event] " << e.eventType << ": " << e.description << std::endl;
     });
 
@@ -137,7 +150,7 @@ int main() {
     std::cout << "  Ready queue: " << state.readyQueue.size() << std::endl;
 
     std::cout << std::endl;
-    std::cout << "Phase 2 complete. ProcessManager registered and operational." << std::endl;
+    std::cout << "Phase 4 complete. ProcessManager + MemoryManager registered and operational." << std::endl;
     std::cout << "========================================" << std::endl;
 
     return 0;
