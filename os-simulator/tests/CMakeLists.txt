@@ -84,3 +84,31 @@ target_link_libraries(test_sync_manager
     sync_manager_lib
 )
 add_test(NAME SyncManagerTests COMMAND test_sync_manager)
+
+# Phase 6: ClockController lifecycle and mode behavior
+add_executable(test_clock_controller test_clock_controller.cpp)
+target_include_directories(test_clock_controller PRIVATE ${ENGINE_INCLUDE_DIR})
+target_link_libraries(test_clock_controller
+    PRIVATE
+    GTest::gtest_main
+    core_lib
+    process_manager_lib
+    scheduler_lib
+    memory_manager_lib
+    sync_manager_lib
+)
+add_test(NAME ClockControllerTests COMMAND test_clock_controller)
+
+# Phase 6: End-to-end integration across all 4 modules via ClockController
+add_executable(test_engine_integration test_engine_integration.cpp)
+target_include_directories(test_engine_integration PRIVATE ${ENGINE_INCLUDE_DIR})
+target_link_libraries(test_engine_integration
+    PRIVATE
+    GTest::gtest_main
+    core_lib
+    process_manager_lib
+    scheduler_lib
+    memory_manager_lib
+    sync_manager_lib
+)
+add_test(NAME EngineIntegrationTests COMMAND test_engine_integration)
