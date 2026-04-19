@@ -36,6 +36,7 @@ struct PCB {
     uint32_t      totalCpuBurst;      // Total CPU ticks required (>= 1)
     uint32_t      remainingBurst;     // Ticks remaining (0 triggers termination)
     uint32_t      quantumUsed;        // Ticks in current RR quantum (reset on dispatch)
+    uint32_t      cpuSegmentLength;   // CPU ticks before I/O burst (deterministic burst cycle)
 
     // ── I/O ──────────────────────────────────────────────────
     uint32_t      ioBurstDuration;    // Duration of single I/O burst (0 = no I/O)
@@ -68,6 +69,7 @@ struct PCB {
         , totalCpuBurst(1)
         , remainingBurst(1)
         , quantumUsed(0)
+        , cpuSegmentLength(1)
         , ioBurstDuration(0)
         , ioRemainingTicks(0)
         , ioCompletionTick(0)

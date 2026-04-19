@@ -24,6 +24,7 @@ struct ProcessSpec {
     uint32_t      cpuBurst;           // Total CPU ticks (0 = auto-assign based on type)
     uint32_t      ioBurstDuration;    // I/O burst duration (0 = auto-assign based on type)
     uint32_t      memoryRequirement;  // Virtual pages needed (0 = auto-assign)
+    uint32_t      cpuSegmentLength;   // CPU ticks before I/O burst (0 = auto-assign)
 
     // ── Default Constructor ──────────────────────────────────
     ProcessSpec()
@@ -33,5 +34,6 @@ struct ProcessSpec {
         , cpuBurst(0)
         , ioBurstDuration(0)
         , memoryRequirement(0)
+        , cpuSegmentLength(0)
     {}
 };

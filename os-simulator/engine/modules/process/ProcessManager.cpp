@@ -190,6 +190,11 @@ int ProcessManager::createProcess(SimulationState& state, EventBus& bus,
     pcb.remainingBurst = pcb.totalCpuBurst;
     pcb.quantumUsed = 0;
 
+    // CPU segment length — auto-assign if 0
+    pcb.cpuSegmentLength = (spec.cpuSegmentLength > 0)
+        ? spec.cpuSegmentLength
+        : autoAssignCpuSegment(spec.type, pcb.totalCpuBurst);
+
     // I/O burst — auto-assign if 0
     pcb.ioBurstDuration = (spec.ioBurstDuration > 0)
         ? spec.ioBurstDuration
@@ -377,4 +382,13 @@ uint32_t ProcessManager::autoAssignMemory(ProcessType type) {
 
 std::string ProcessManager::autoGenerateName(int pid) {
     return "proc_" + std::to_string(pid);
+}
+
+uint32_t ProcessManager::autoAssignCpuSegment(ProcessType type, uint32_t totalBurst) {
+    switch (type) {
+        case ProcessType::CPU_BOUND: return totalBurst;  // Never enters I/O
+        case ProcessType::IO_BOUND:  return randomInRange(1, 2);  // Very frequent I/O
+        case ProcessType::MIXED:     return std::max(1u, totalBurst / 3);  // Moderate
+    }
+    return totalBurst;  // fallback — no I/O
 }

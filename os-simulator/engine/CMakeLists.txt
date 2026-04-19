@@ -29,10 +29,17 @@ target_link_libraries(process_manager_lib PUBLIC core_lib)
 
 # ── Main Executable ──────────────────────────────────────────
 add_executable(os_simulator main.cpp)
-target_link_libraries(os_simulator PRIVATE core_lib process_manager_lib)
+target_link_libraries(os_simulator PRIVATE core_lib process_manager_lib scheduler_lib)
+
+# ── Scheduler Library (Phase 3) ──────────────────────────────
+# Contains: Scheduler, ISchedulingPolicy, FCFSPolicy, RoundRobinPolicy, PriorityPolicy
+add_library(scheduler_lib
+    modules/scheduler/Scheduler.cpp
+)
+target_include_directories(scheduler_lib PUBLIC ${ENGINE_INCLUDE_DIR})
+target_link_libraries(scheduler_lib PUBLIC core_lib)
 
 # ── Future: Module Libraries ─────────────────────────────────
-# Phase 3: add_library(scheduler_lib modules/scheduler/Scheduler.cpp)
 # Phase 4: add_library(memory_manager_lib modules/memory/MemoryManager.cpp)
 # Phase 5: add_library(sync_manager_lib modules/sync/SyncManager.cpp)
 # Phase 7: add_library(bridge_lib bridge/RestServer.cpp bridge/WsServer.cpp)

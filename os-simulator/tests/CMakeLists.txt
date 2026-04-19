@@ -48,3 +48,15 @@ target_link_libraries(test_process_manager
     process_manager_lib
 )
 add_test(NAME ProcessManagerTests COMMAND test_process_manager)
+
+# ── Test: Scheduler (Phase 3) ───────────────────────────────
+add_executable(test_scheduler test_scheduler.cpp)
+target_include_directories(test_scheduler PRIVATE ${ENGINE_INCLUDE_DIR})
+target_link_libraries(test_scheduler
+    PRIVATE
+    GTest::gtest_main
+    core_lib
+    process_manager_lib
+    scheduler_lib
+)
+add_test(NAME SchedulerTests COMMAND test_scheduler)

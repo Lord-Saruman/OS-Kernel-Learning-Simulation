@@ -1,4 +1,4 @@
-﻿
+
 MINI OS KERNEL SIMULATOR
 Data Dictionary
 
@@ -161,6 +161,7 @@ struct PCB {
   uint32_t      totalCpuBurst;
   uint32_t      remainingBurst;
   uint32_t      quantumUsed;
+  uint32_t      cpuSegmentLength;
 
   // I/O
   uint32_t      ioBurstDuration;
@@ -253,6 +254,12 @@ uint32_t
 W
 CPU ticks consumed in the current Round Robin quantum. Reset to 0 on each new dispatch.
 0 <= quantumUsed <= timeQuantum (SimulationState).
+cpuSegmentLength
+uint32_t
+4
+R
+Number of CPU ticks a process runs before it must enter an I/O burst, creating a deterministic CPU-I/O cycle.
+>= 0. Auto-assigned based on ProcessType.
 ioBurstDuration
 uint32_t
 4

@@ -142,5 +142,6 @@ private:
     uint32_t autoAssignBurst(ProcessType type);
     uint32_t autoAssignIO(ProcessType type);
     uint32_t autoAssignMemory(ProcessType type);
+    uint32_t autoAssignCpuSegment(ProcessType type, uint32_t totalBurst);
     std::string autoGenerateName(int pid);
 };
