@@ -29,7 +29,7 @@ target_link_libraries(process_manager_lib PUBLIC core_lib)
 
 # ── Main Executable ──────────────────────────────────────────
 add_executable(os_simulator main.cpp)
-target_link_libraries(os_simulator PRIVATE core_lib process_manager_lib scheduler_lib memory_manager_lib)
+target_link_libraries(os_simulator PRIVATE core_lib process_manager_lib scheduler_lib memory_manager_lib sync_manager_lib)
 
 # ── Scheduler Library (Phase 3) ──────────────────────────────
 # Contains: Scheduler, ISchedulingPolicy, FCFSPolicy, RoundRobinPolicy, PriorityPolicy
@@ -47,8 +47,15 @@ add_library(memory_manager_lib
 target_include_directories(memory_manager_lib PUBLIC ${ENGINE_INCLUDE_DIR})
 target_link_libraries(memory_manager_lib PUBLIC core_lib)
 
+# ── Sync Manager Library (Phase 5) ───────────────────────────
+# Contains: SyncManager, Mutex, Semaphore, SyncRequest
+add_library(sync_manager_lib
+    modules/sync/SyncManager.cpp
+)
+target_include_directories(sync_manager_lib PUBLIC ${ENGINE_INCLUDE_DIR})
+target_link_libraries(sync_manager_lib PUBLIC core_lib)
+
 # ── Future: Module Libraries ─────────────────────────────────
-# Phase 5: add_library(sync_manager_lib modules/sync/SyncManager.cpp)
 # Phase 7: add_library(bridge_lib bridge/RestServer.cpp bridge/WsServer.cpp)
 
 # ── Future: External Dependencies (Phase 7) ──────────────────

@@ -72,3 +72,15 @@ target_link_libraries(test_memory_manager
     memory_manager_lib
 )
 add_test(NAME MemoryManagerTests COMMAND test_memory_manager)
+
+# ── Test: SyncManager (Phase 5) ─────────────────────────────
+add_executable(test_sync_manager test_sync_manager.cpp)
+target_include_directories(test_sync_manager PRIVATE ${ENGINE_INCLUDE_DIR})
+target_link_libraries(test_sync_manager
+    PRIVATE
+    GTest::gtest_main
+    core_lib
+    process_manager_lib
+    sync_manager_lib
+)
+add_test(NAME SyncManagerTests COMMAND test_sync_manager)

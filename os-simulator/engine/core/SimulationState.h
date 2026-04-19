@@ -33,6 +33,7 @@
 #include "modules/scheduler/SchedulingMetrics.h"
 #include "modules/sync/Mutex.h"
 #include "modules/sync/Semaphore.h"
+#include "modules/sync/SyncRequest.h"
 #include "modules/memory/PageTable.h"
 #include "modules/memory/FrameTableEntry.h"
 #include "modules/memory/MemoryMetrics.h"
@@ -70,6 +71,7 @@ struct SimulationState {
     std::map<int, Mutex>          mutexTable;      // mutexId -> Mutex
     std::map<int, Semaphore>      semaphoreTable;  // semId -> Semaphore
     std::map<int, std::deque<int>> blockedQueues;  // syncID -> blocked PIDs
+    std::deque<SyncRequest>       pendingSyncRequests;  // Queued sync operations
 
     // ══════════════════════════════════════════════════════════
     // Memory Manager
@@ -142,6 +144,7 @@ struct SimulationState {
         mutexTable.clear();
         semaphoreTable.clear();
         blockedQueues.clear();
+        pendingSyncRequests.clear();
 
         frameTable.clear();
         pageTables.clear();
