@@ -27,3 +27,8 @@ node_modules/
 # Environment Variables
 .env
 .env.*
+
+# Project Specific
+implementation plans/
+walkthroughs/
+build_phase*/
