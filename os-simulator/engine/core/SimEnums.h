@@ -102,12 +102,17 @@ inline SimMode simModeFromString(const std::string& s) {
 
 // ─────────────────────────────────────────────────────────────
 // §2.4  SimStatus — Current simulation lifecycle status
+//
+// Lifecycle: IDLE → start → RUNNING → pause → PAUSED → start → RUNNING
+//            Any state → reset → IDLE
+//
+// Note: STOPPED was removed in Phase 6 integration. The simulator
+// resets directly to IDLE without an intermediate terminal state.
 // ─────────────────────────────────────────────────────────────
 enum class SimStatus {
     IDLE,     // Not started or has been reset
     RUNNING,  // Clock actively advancing ticks
-    PAUSED,   // Clock suspended, state preserved
-    STOPPED   // Simulation ended, cleared on next reset
+    PAUSED    // Clock suspended, state preserved
 };
 
 inline std::string toString(SimStatus s) {
@@ -115,7 +120,6 @@ inline std::string toString(SimStatus s) {
         case SimStatus::IDLE:    return "IDLE";
         case SimStatus::RUNNING: return "RUNNING";
         case SimStatus::PAUSED:  return "PAUSED";
-        case SimStatus::STOPPED: return "STOPPED";
     }
     return "UNKNOWN";
 }
@@ -124,7 +128,6 @@ inline SimStatus simStatusFromString(const std::string& s) {
     if (s == "IDLE")    return SimStatus::IDLE;
     if (s == "RUNNING") return SimStatus::RUNNING;
     if (s == "PAUSED")  return SimStatus::PAUSED;
-    if (s == "STOPPED") return SimStatus::STOPPED;
     throw std::invalid_argument("Invalid SimStatus: " + s);
 }
 

@@ -295,7 +295,6 @@ TEST(EnumTest, SimStatusRoundTrip) {
     EXPECT_EQ(simStatusFromString(toString(SimStatus::IDLE)), SimStatus::IDLE);
     EXPECT_EQ(simStatusFromString(toString(SimStatus::RUNNING)), SimStatus::RUNNING);
     EXPECT_EQ(simStatusFromString(toString(SimStatus::PAUSED)), SimStatus::PAUSED);
-    EXPECT_EQ(simStatusFromString(toString(SimStatus::STOPPED)), SimStatus::STOPPED);
 }
 
 TEST(EnumTest, SchedulingPolicyRoundTrip) {

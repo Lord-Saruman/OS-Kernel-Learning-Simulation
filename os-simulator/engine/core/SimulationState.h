@@ -44,7 +44,7 @@ struct SimulationState {
     // ══════════════════════════════════════════════════════════
     uint64_t    currentTick;       // Current simulation clock tick
     SimMode     mode;              // STEP | AUTO
-    SimStatus   status;            // IDLE | RUNNING | PAUSED | STOPPED
+    SimStatus   status;            // IDLE | RUNNING | PAUSED
     uint32_t    autoSpeedMs;       // Tick interval in ms for AUTO mode
 
     // ══════════════════════════════════════════════════════════
