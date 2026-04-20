@@ -56,6 +56,19 @@ public:
     virtual void reset() = 0;
 
     /**
+     * Bootstrap module after construction or reset. Called by the
+     * ClockController to initialise runtime-dependent state (e.g.
+     * frame table). Default is no-op; override if needed.
+     *
+     * @param state  Shared simulation state to bootstrap into
+     * @param frameCount  Number of physical frames (used by MemoryManager)
+     */
+    virtual void bootstrap(SimulationState& state, uint32_t frameCount) {
+        (void)state;
+        (void)frameCount;
+    }
+
+    /**
      * Get the current operational status of this module.
      */
     virtual ModuleStatus getStatus() const = 0;

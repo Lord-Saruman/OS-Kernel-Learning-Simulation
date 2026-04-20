@@ -21,7 +21,6 @@
 #include "core/EventBus.h"
 #include "core/SimEvent.h"
 #include "core/SimulationState.h"
-#include "modules/memory/MemoryManager.h"
 
 using namespace std::chrono_literals;
 
@@ -48,7 +47,6 @@ ClockController::ClockController(SimulationState& state, EventBus& bus)
     : state_(state)
     , bus_(bus)
     , modules_{}
-    , memoryManager_(nullptr)
     , runtimeConfig_{}
     , impl_(std::make_unique<Impl>()) {}
 
@@ -71,10 +69,6 @@ void ClockController::registerModule(ModuleSlot slot, std::shared_ptr<ISimModule
     }
 
     modules_[slotIndex(slot)] = std::move(module);
-
-    if (slot == ModuleSlot::MEMORY) {
-        memoryManager_ = std::dynamic_pointer_cast<MemoryManager>(modules_[slotIndex(slot)]);
-    }
 }
 
 void ClockController::registerModule(std::shared_ptr<ISimModule> module) {
@@ -93,10 +87,6 @@ void ClockController::registerModule(std::shared_ptr<ISimModule> module) {
     }
 
     *it = std::move(module);
-    size_t idx = static_cast<size_t>(std::distance(modules_.begin(), it));
-    if (idx == slotIndex(ModuleSlot::MEMORY)) {
-        memoryManager_ = std::dynamic_pointer_cast<MemoryManager>(*it);
-    }
 }
 
 size_t ClockController::getModuleCount() const {
@@ -179,7 +169,18 @@ void ClockController::setAutoSpeedMs(uint32_t ms) {
 
     std::lock_guard<std::mutex> lock(impl_->controlMutex);
     state_.autoSpeedMs = ms;
+    runtimeConfig_.autoSpeedMs = ms;
     impl_->controlCv.notify_all();
+}
+
+void ClockController::setTimeQuantum(uint32_t quantum) {
+    if (quantum == 0) {
+        quantum = 1;
+    }
+
+    std::lock_guard<std::mutex> lock(impl_->controlMutex);
+    state_.timeQuantum = quantum;
+    runtimeConfig_.timeQuantum = quantum;
 }
 
 bool ClockController::requestStep() {
@@ -191,7 +192,9 @@ bool ClockController::requestStep() {
     if (state_.mode != SimMode::STEP) {
         return false;
     }
-    if (state_.status != SimStatus::RUNNING) {
+    // Allow step when RUNNING or PAUSED (step-while-paused UX).
+    if (state_.status != SimStatus::RUNNING &&
+        state_.status != SimStatus::PAUSED) {
         return false;
     }
 
@@ -236,9 +239,12 @@ void ClockController::runSingleTick() {
         impl_->tickInFlight = true;
     }
 
+    // Clear tick events OUTSIDE stateMutex to avoid nested lock
+    // (EventBus has its own mutex — no ordering dependency needed).
+    bus_.clearTickEvents();
+
     {
         std::unique_lock<std::shared_mutex> stateLock(state_.stateMutex);
-        bus_.clearTickEvents();
         state_.currentTick++;
     }
 
@@ -327,7 +333,9 @@ void ClockController::clockLoop() {
         if (mode == SimMode::STEP) {
             impl_->controlCv.wait(lock, [this]() {
                 return impl_->shutdownRequested
-                    || (state_.status == SimStatus::RUNNING && impl_->stepRequested)
+                    || (impl_->stepRequested &&
+                        (state_.status == SimStatus::RUNNING ||
+                         state_.status == SimStatus::PAUSED))
                     || state_.status != SimStatus::RUNNING
                     || state_.mode != SimMode::STEP;
             });
@@ -338,7 +346,13 @@ void ClockController::clockLoop() {
                 break;
             }
 
-            if (state_.status != SimStatus::RUNNING || state_.mode != SimMode::STEP) {
+            if (state_.mode != SimMode::STEP) {
+                continue;
+            }
+
+            // Consume the step request. If we were PAUSED, stay PAUSED
+            // after the tick (single-step does not change status).
+            if (!impl_->stepRequested) {
                 continue;
             }
 
@@ -387,10 +401,16 @@ void ClockController::reset() {
         }
     }
 
-    // Re-apply runtime bootstrap config (frame table must exist after reset).
-    if (memoryManager_) {
+    // Re-apply runtime bootstrap config via generic ISimModule::bootstrap().
+    {
         std::unique_lock<std::shared_mutex> stateLock(state_.stateMutex);
-        memoryManager_->initializeFrameTable(state_, runtimeConfig_.frameCount);
+        for (auto& module : modules_) {
+            if (module) {
+                module->bootstrap(state_, runtimeConfig_.frameCount);
+            }
+        }
+        state_.autoSpeedMs = runtimeConfig_.autoSpeedMs;
+        state_.timeQuantum = runtimeConfig_.timeQuantum;
     }
 
     bus_.clearTickEvents();

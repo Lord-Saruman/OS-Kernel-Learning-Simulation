@@ -62,6 +62,10 @@ void MemoryManager::reset() {
     accessSequenceIdx_ = 0;
 }
 
+void MemoryManager::bootstrap(SimulationState& state, uint32_t frameCount) {
+    initializeFrameTable(state, frameCount);
+}
+
 // ═══════════════════════════════════════════════════════════════
 // onTick() — Core per-tick logic
 // ═══════════════════════════════════════════════════════════════

@@ -11,6 +11,15 @@
  * - std::barrier synchronization between clock and workers
  * - deterministic phase order per tick:
  *   PROCESS -> SCHEDULER -> MEMORY -> SYNC
+ *
+ * LOCK DISCIPLINE:
+ * - state_.status is modified under controlMutex (start/pause/reset)
+ * - state_.status is read by modules under stateMutex during onTick()
+ * - Phase 7 HTTP thread should read status under controlMutex,
+ *   NOT stateMutex, to get the authoritative control-flow value.
+ * - Lock ordering: controlMutex may NOT be acquired while holding
+ *   stateMutex. EventBus::mutex_ is independent (no nesting with
+ *   stateMutex).
  */
 
 #include <array>
@@ -25,7 +34,6 @@
 // Forward declarations
 struct SimulationState;
 class EventBus;
-class MemoryManager;
 
 enum class ModuleSlot {
     PROCESS = 0,
@@ -52,8 +60,10 @@ public:
 
     void setMode(SimMode mode);
     void setAutoSpeedMs(uint32_t ms);
+    void setTimeQuantum(uint32_t quantum);
 
-    // Request one step tick while in STEP mode and RUNNING state.
+    // Request one step tick while in STEP mode.
+    // Works when status is RUNNING or PAUSED (allows step-while-paused UX).
     bool requestStep();
 
     // Wait until completedTick_ advances beyond previousTick.
@@ -70,14 +80,15 @@ private:
     static constexpr size_t kModuleCount = 4;
 
     struct RuntimeConfig {
-        uint32_t frameCount = 16;
+        uint32_t frameCount   = 16;
+        uint32_t autoSpeedMs  = 500;
+        uint32_t timeQuantum  = 2;
     };
 
     SimulationState& state_;
     EventBus& bus_;
 
     std::array<std::shared_ptr<ISimModule>, kModuleCount> modules_;
-    std::shared_ptr<MemoryManager> memoryManager_;
     RuntimeConfig runtimeConfig_;
 
     class Impl;

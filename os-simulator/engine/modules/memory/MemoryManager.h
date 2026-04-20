@@ -85,6 +85,12 @@ public:
      */
     std::string getModuleName() const override;
 
+    /**
+     * Bootstrap after construction or reset.
+     * Initialises the frame table in SimulationState.
+     */
+    void bootstrap(SimulationState& state, uint32_t frameCount) override;
+
     // ══════════════════════════════════════════════════════════
     // Policy Management API
     // (called by API Bridge in Phase 7, or directly in tests)
