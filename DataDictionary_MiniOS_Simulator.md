@@ -84,6 +84,8 @@ Simulation advances automatically on a timer. Interval controlled by autoSpeedMs
 
 2.4 SimStatus
 
+Lifecycle: IDLE → start → RUNNING → pause → PAUSED → start → RUNNING. Any state → reset → IDLE.
+
 Enum Value
 Meaning
 IDLE
@@ -91,9 +93,9 @@ Simulation has not been started or has been reset. No clock activity.
 RUNNING
 Simulation clock is actively advancing ticks.
 PAUSED
-Clock is suspended. State is preserved. Resumes on /sim/start.
-STOPPED
-Simulation ended. All state cleared on next /sim/reset.
+Clock is suspended. State is preserved. Resumes on /sim/start. Single-step via /sim/step is allowed while PAUSED.
+
+Note: STOPPED was removed during Phase 6 integration. The simulator resets directly to IDLE without an intermediate terminal state.
 
 2.5 SchedulingPolicy
 

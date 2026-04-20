@@ -1,4 +1,4 @@
-﻿
+
 MINI OS KERNEL SIMULATOR
 System Design Document (SDD)
 
@@ -104,15 +104,17 @@ OS Module
 Manages frame table and per-process page tables. Handles page faults. Executes active replacement algorithm. Publishes fault events.
 
 3.2 The Simulation Clock
-The engine operates on a discrete clock tick model. A central Clock Controller thread advances a global tick counter. Each tick represents one unit of simulated CPU time. On each tick:
-The Scheduler selects the running process and decrements its remaining burst
-The Process Manager checks for I/O completions and moves waiting processes back to ready
+The engine operates on a discrete clock tick model. A central Clock Controller thread advances a global tick counter. Each tick represents one unit of simulated CPU time. On each tick, modules execute in the following deterministic order:
+The Process Manager admits new processes (NEW → READY) and completes I/O waits for waiting processes
+The Scheduler selects the next running process from the ready queue and decrements its remaining burst
 The Memory Manager services any pending page fault for the running process
 The Sync Manager checks for lock acquisition by blocked processes
 All state changes are published to the Event Bus
 The API bridge broadcasts the full updated state snapshot to all WebSocket clients
 
-In Step Mode, the Clock Controller waits for an explicit advance signal from the API bridge before incrementing the tick. In Auto Mode, it advances on a configurable timer interval.
+This order is enforced by the ClockController's phased worker-thread model: each module runs in its own real thread, but only one module executes per phase within a tick, coordinated via std::barrier. This guarantees deterministic, race-free execution while still using real OS threads (NFR-07).
+
+In Step Mode, the Clock Controller waits for an explicit advance signal from the API bridge (or while PAUSED, a single step) before incrementing the tick. In Auto Mode, it advances on a configurable timer interval.
 
 3.3 Module Interface Contract
 Every OS module must implement the following interface. This is enforced via a C++ abstract base class (ISimModule). Any new module added in the future must conform to this same interface — this is what makes the system extensible.
@@ -191,7 +193,7 @@ struct SimulationState {
   // Clock
   uint64_t                      currentTick;
   SimMode                       mode;         // STEP | AUTO
-  SimStatus                     status;       // RUNNING | PAUSED | STOPPED
+  SimStatus                     status;       // IDLE | RUNNING | PAUSED
   uint32_t                      autoSpeedMs;  // tick interval in ms
 
   // Process Manager
@@ -378,11 +380,11 @@ Each clock tick follows a strict sequence to prevent race conditions within the 
 Step
 Action
 1
-Clock Controller increments tick counter and signals all module threads via a std::barrier.
+Clock Controller increments tick counter and signals the first module thread.
 2
-All four module threads execute their onTick() method concurrently, acquiring fine-grained write locks on only the sections of SimulationState they modify.
+Module threads execute their onTick() method in deterministic order (Process → Scheduler → Memory → Sync), each acquiring an exclusive write lock on SimulationState during its phase. Only one module mutates state at a time.
 3
-Module threads arrive at the barrier completion phase — all must finish before any proceeds.
+All four phases complete — the controller signals tick completion.
 4
 WebSocket Broadcast Thread acquires a full read lock on SimulationState, serialises it, and broadcasts.
 5
@@ -391,9 +393,9 @@ Read lock released. HTTP server may now service any pending command requests.
 Clock Controller waits for interval (Auto) or step signal (Step), then repeats from Step 1.
 
 7.3 Locking Strategy
-SimulationState uses a std::shared_mutex — multiple modules may read concurrently, writes are exclusive
-Each module acquires a scoped write lock only on the subsection of state it modifies (e.g. Scheduler locks readyQueue and ganttLog only)
-The Event Bus uses a separate std::mutex for its subscription list to allow concurrent event publishing
+SimulationState uses a std::shared_mutex — multiple readers, exclusive writer
+During tick execution, each module phase acquires an exclusive write lock on the full SimulationState. Only one module runs per phase, so no fine-grained per-subsection locking is needed at this stage.
+The Event Bus uses a separate std::mutex for its subscription list and tick event buffer. The EventBus mutex is independent of stateMutex (no nesting constraint).
 The HTTP server uses a condition variable to notify the Clock Controller when a step command arrives in Step Mode
 
 8. Technology Stack
