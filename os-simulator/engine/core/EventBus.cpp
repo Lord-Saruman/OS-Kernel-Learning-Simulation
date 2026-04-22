@@ -9,21 +9,21 @@
 #include <algorithm>
 
 int EventBus::subscribe(const std::string& eventType, EventHandler handler) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     int id = nextSubId_++;
     subscribers_[eventType].emplace_back(id, std::move(handler));
     return id;
 }
 
 int EventBus::subscribeAll(EventHandler handler) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     int id = nextSubId_++;
     globalSubscribers_.emplace_back(id, std::move(handler));
     return id;
 }
 
 void EventBus::unsubscribe(int subscriptionId) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
 
     // Remove from type-specific subscribers
     for (auto& [type, subs] : subscribers_) {
@@ -47,7 +47,7 @@ void EventBus::unsubscribe(int subscriptionId) {
 }
 
 void EventBus::publish(const SimEvent& event) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
 
     // Store in tick events buffer
     tickEvents_.push_back(event);
@@ -67,17 +67,17 @@ void EventBus::publish(const SimEvent& event) {
 }
 
 std::vector<SimEvent> EventBus::getTickEvents() const {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     return tickEvents_;
 }
 
 void EventBus::clearTickEvents() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     tickEvents_.clear();
 }
 
 void EventBus::reset() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     subscribers_.clear();
     globalSubscribers_.clear();
     tickEvents_.clear();

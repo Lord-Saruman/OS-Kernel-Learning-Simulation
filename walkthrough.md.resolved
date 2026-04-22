@@ -1,0 +1,173 @@
+# Phase 7 & 8 — Testing Guide (Exact UI Labels)
+
+## 🚀 How to Start
+
+You need **2 terminals** running at the same time:
+
+**Terminal 1 — Engine:**
+```powershell
+cd "e:\Semester 4\OS-CEP\OS-Kernel-Learning-Simulation\os-simulator"
+.\build\engine\Release\os_simulator.exe
+```
+
+**Terminal 2 — Dashboard:**
+```powershell
+cd "e:\Semester 4\OS-CEP\OS-Kernel-Learning-Simulation\os-simulator\dashboard"
+npm run dev
+```
+
+Open **http://localhost:5173** in Chrome.
+
+> [!IMPORTANT]
+> Start Terminal 1 first. If the engine isn't running, you'll see a dark overlay saying **"Connecting to Engine..."** with a spinner.
+
+---
+
+## 🖥️ What You See on Screen
+
+The dashboard has **3 zones**:
+
+| Zone | Location | What's There |
+|------|----------|--------------|
+| **Simulation Control** | Top bar (always visible) | Start/Pause/Step/Reset buttons, Mode/Speed/Scheduler/Memory/Workload dropdowns |
+| **Sidebar** | Left side | 5 clickable tabs: Process Manager, CPU Scheduler, Memory Manager, Synchronization, Decision Log |
+| **Taskbar** | Bottom bar | Panel icons, status dot (IDLE/RUNNING/PAUSED), tick counter, Online/Offline indicator |
+
+---
+
+## 🧪 Test Flow (Do These Steps In Order)
+
+### Step 1: Verify Connection
+- Open `http://localhost:5173`
+- ✅ **Expected:** The spinner overlay disappears. Bottom-right of taskbar shows **"● Online"**
+
+### Step 2: Load Processes
+In the top **Simulation Control** bar:
+1. Find the dropdown labeled **"Workload"** (far right side of control bar)
+2. Click it → select **"Mixed (8)"**
+3. ✅ **Expected:** Click the **"Process Manager"** tab in the left sidebar. You should see **8 processes** listed in the table with columns: PID, Name, State, Type, Pri, Burst, Wait
+
+### Step 3: Step Through Ticks
+In the top control bar:
+1. Click the blue **"Start"** button (has a ▶ icon)
+2. ✅ **Expected:** The tick counter (bottom-right of control bar, shows **"Tick 0"**) does NOT auto-increment yet (because Mode is "Step")
+3. Click the **"Step"** button (has a ⏭ icon) 
+4. ✅ **Expected:** Tick counter changes to **"Tick 1"**. Process states change (some go from NEW → READY → RUNNING)
+5. Click **"Step"** a few more times
+6. ✅ **Expected:** Tick counter increments by 1 each time. The process table updates.
+
+### Step 4: Switch to Auto Mode
+In the control bar:
+1. Find the dropdown labeled **"Mode"** (currently shows **"Step"**)
+2. Change it to **"Auto"**
+3. ✅ **Expected:** 
+   - The simulation auto-starts if it wasn't already running
+   - A **speed slider** appears next to Mode (labeled **"Speed"**)
+   - Tick counter increments automatically every 500ms
+   - The badge changes to **"RUNNING"**
+
+### Step 5: Adjust Speed
+1. Drag the **"Speed"** slider left (toward 50ms) → ticks go faster
+2. Drag it right (toward 2000ms) → ticks go slower  
+3. The number next to the slider shows the current speed (e.g., **"200ms"**)
+
+### Step 6: Pause
+1. Click the **"Pause"** button (has a ⏸ icon, replaces Start when running)
+2. ✅ **Expected:** Tick counter stops. Badge shows **"PAUSED"**
+3. Click **"Resume"** to continue
+
+### Step 7: View Scheduler (Gantt Chart)
+1. Click **"CPU Scheduler"** in the left sidebar
+2. ✅ **Expected:** You see 3 sections:
+   - **Ready Queue** — colored bubbles showing PIDs (e.g., P1, P3, P5)
+   - **Gantt Chart** — colored bars showing which process ran at each tick
+   - **Metrics** — 6 cards: Avg Wait, Avg Turnaround, CPU Util, Ctx Switches, Completed, Throughput/100
+
+### Step 8: Change Scheduling Policy
+In the control bar:
+1. Change the **"Scheduler"** dropdown from **"FCFS"** to **"Round Robin"**
+2. ✅ **Expected:** 
+   - A **"Quantum"** input appears next to the Scheduler dropdown
+   - Processes now rotate every N ticks (default quantum = 2)
+3. Change **"Quantum"** to **3**
+4. ✅ **Expected:** Processes now rotate every 3 ticks in the Gantt chart
+
+### Step 9: View Memory
+1. Click **"Memory Manager"** in the left sidebar
+2. ✅ **Expected:** You see:
+   - **4 metric cards**: Page Faults, Fault Rate, Replacements, Free Frames
+   - **Frame Table** — a grid of 16 squares. Colored squares = occupied (hover to see PID)
+
+### Step 10: Change Memory Policy
+In the control bar:
+1. Change the **"Memory"** dropdown from **"FIFO"** to **"LRU"**
+2. ✅ **Expected:** Future page replacements use LRU algorithm
+
+### Step 11: View Decision Log
+1. Click **"Decision Log"** in the left sidebar
+2. ✅ **Expected:** Scrollable list of entries like:
+   ```
+   T1   Scheduled PID 1 (FCFS, no preemption)
+   T2   Context switch: PID 1 → PID 3
+   ```
+
+### Step 12: Create a Process Manually
+1. Click **"Process Manager"** in the left sidebar
+2. Click the **"+ New"** button (top right of the panel)
+3. Fill in: Name = `my_proc`, Type = `CPU`, Priority = `1`, Burst = `15`
+4. Click **"Create"**
+5. ✅ **Expected:** New row appears with state NEW or READY
+
+### Step 13: Kill a Process
+1. In the Process Manager table, find a process that is NOT TERMINATED
+2. Click the red 🗑️ trash icon on that row
+3. ✅ **Expected:** Process state changes to TERMINATED
+
+### Step 14: Test Synchronization (Race Condition Demo)
+1. Click the **"⚡ Sync Demo"** button in the control bar.
+2. Click **"Synchronization"** in the left sidebar.
+3. Switch the Mode to **"Auto"** and click **Play (Start)**.
+4. ✅ **Expected:** You will see two processes (`DemoWriter_A` and `DemoWriter_B`) rapidly acquiring and releasing the `critical_section_lock` Mutex. The lock will turn Red (`LOCKED`) when held, and the competing process will be pushed into the **Wait Queue**.
+
+### Step 15: Reset Everything
+1. Click the red **"Reset"** button in the control bar
+2. ✅ **Expected:** 
+   - Tick → **0**
+   - Status → **IDLE** 
+   - All processes cleared
+   - Gantt chart empty
+   - Memory frames empty
+   - Decision log empty
+
+---
+
+## 💻 PowerShell API Tests (Optional)
+
+Test the API directly without the dashboard:
+
+```powershell
+# Load mixed workload
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/workload/load `
+  -Body '{"scenario":"mixed"}' -ContentType "application/json"
+
+# Start
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/sim/start
+
+# Step one tick
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/sim/step
+
+# Get state snapshot
+Invoke-RestMethod -Uri http://localhost:8080/state/snapshot | ConvertTo-Json -Depth 10
+
+# Set auto mode
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/sim/mode `
+  -Body '{"mode":"AUTO"}' -ContentType "application/json"
+
+# Create process
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/process/create `
+  -Body '{"name":"test","type":"CPU_BOUND","priority":3,"cpu_burst":10}' `
+  -ContentType "application/json"
+
+# Reset
+Invoke-RestMethod -Method POST -Uri http://localhost:8080/sim/reset
+```

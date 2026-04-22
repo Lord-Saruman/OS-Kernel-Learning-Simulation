@@ -77,7 +77,7 @@ public:
     void reset();
 
 private:
-    mutable std::mutex mutex_;
+    mutable std::recursive_mutex mutex_;
 
     // Type-specific subscribers: eventType -> [(subId, handler)]
     std::map<std::string, std::vector<std::pair<int, EventHandler>>> subscribers_;

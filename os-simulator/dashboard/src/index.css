@@ -1,0 +1,724 @@
+/**
+ * index.css — Windows 11 Design System
+ *
+ * Reference: Phase 8 Implementation Plan (Design Tokens)
+ *
+ * Dark mode, Mica/Acrylic materials, glassmorphism,
+ * Inter font, smooth transitions.
+ */
+
+/* ═══ Reset ═══════════════════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ═══ Design Tokens ═══════════════════════════════════════════ */
+:root {
+  /* Desktop */
+  --bg-desktop: #0a0a1a;
+  --bg-desktop-gradient: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0d0d2b 100%);
+
+  /* Window materials */
+  --bg-window: rgba(25, 25, 45, 0.88);
+  --bg-titlebar: rgba(30, 30, 55, 0.95);
+  --bg-titlebar-focused: rgba(40, 40, 70, 0.98);
+  --bg-panel: rgba(20, 20, 40, 0.6);
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --bg-input-hover: rgba(255, 255, 255, 0.09);
+
+  /* Taskbar */
+  --bg-taskbar: rgba(20, 20, 40, 0.92);
+
+  /* Accent Colors */
+  --accent: #60a5fa;
+  --accent-hover: #93c5fd;
+  --accent-dim: rgba(96, 165, 250, 0.15);
+  --accent-glow: rgba(96, 165, 250, 0.3);
+
+  /* Process State Colors */
+  --state-new: #a78bfa;
+  --state-ready: #60a5fa;
+  --state-running: #34d399;
+  --state-waiting: #fbbf24;
+  --state-terminated: #6b7280;
+
+  /* Module badge colors */
+  --module-process: #60a5fa;
+  --module-scheduler: #a78bfa;
+  --module-memory: #34d399;
+  --module-sync: #f472b6;
+
+  /* Text */
+  --text-primary: #f0f0f5;
+  --text-secondary: #9898b8;
+  --text-tertiary: #6868888;
+  --text-accent: var(--accent);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(96, 165, 250, 0.4);
+
+  /* Shadows */
+  --shadow-window: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1);
+  --shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-button: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  /* Radius */
+  --radius-window: 10px;
+  --radius-button: 6px;
+  --radius-badge: 4px;
+  --radius-card: 8px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Font */
+  --font-family: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+}
+
+/* ═══ Global Styles ═══════════════════════════════════════════ */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-desktop);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══ Scrollbar (Windows 11 thin style) ══════════════════════ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ═══ Desktop ═════════════════════════════════════════════════ */
+.desktop {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-desktop-gradient);
+  overflow: hidden;
+}
+
+/* ═══ App Layout ══════════════════════════════════════════════ */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 48px); /* subtract taskbar */
+  padding: var(--space-sm);
+  gap: var(--space-sm);
+}
+
+.app-control-bar {
+  flex-shrink: 0;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  gap: var(--space-sm);
+  min-height: 0; /* allow flex children to shrink */
+}
+
+.app-sidebar {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm);
+  background: var(--bg-window);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-window);
+  backdrop-filter: blur(20px) saturate(1.3);
+}
+
+.sidebar-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+.sidebar-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+.sidebar-tab.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-left: 3px solid var(--accent);
+  padding-left: 9px;
+}
+.sidebar-tab__label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-panel {
+  flex: 1;
+  min-width: 0; /* allow flex children to shrink */
+}
+
+
+/* ═══ Taskbar ═════════════════════════════════════════════════ */
+.taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: var(--bg-taskbar);
+  backdrop-filter: blur(30px) saturate(1.5);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+  z-index: 9999;
+}
+
+.taskbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.taskbar__center {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.taskbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.taskbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.taskbar__btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.taskbar__btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.taskbar__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.taskbar__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--state-terminated);
+}
+.taskbar__status-dot.running { background: var(--state-running); box-shadow: 0 0 8px var(--state-running); }
+.taskbar__status-dot.paused { background: var(--state-waiting); }
+.taskbar__status-dot.idle { background: var(--state-terminated); }
+
+/* ═══ Window Chrome ═══════════════════════════════════════════ */
+.window {
+  position: relative;
+  background: var(--bg-window);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-window);
+  backdrop-filter: blur(20px) saturate(1.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow var(--transition-normal);
+}
+.window.focused {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-elevated), 0 0 0 1px var(--border-accent);
+}
+
+.window__titlebar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 var(--space-md);
+  background: var(--bg-titlebar);
+  user-select: none;
+  cursor: grab;
+  flex-shrink: 0;
+}
+.window__titlebar:active {
+  cursor: grabbing;
+}
+
+.window__icon {
+  width: 16px;
+  height: 16px;
+  margin-right: var(--space-sm);
+  color: var(--accent);
+}
+
+.window__title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.window__controls {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.window__control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+.window__control-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+.window__control-btn.close:hover {
+  background: #e81123;
+  color: white;
+}
+
+.window__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+}
+
+/* ═══ Buttons ═════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--bg-input-hover);
+  border-color: var(--border-hover);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0a0a1a;
+}
+.btn.primary:hover {
+  background: var(--accent-hover);
+}
+.btn.danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+.btn.danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+.btn.sm {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.btn.icon-only {
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+}
+
+/* ═══ Inputs / Selects ════════════════════════════════════════ */
+.input, .select {
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 12px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+.input:focus, .select:focus {
+  border-color: var(--accent);
+}
+.select {
+  cursor: pointer;
+  appearance: none;
+  padding-right: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239898b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+.select option {
+  background: #1a1a3e;
+  color: var(--text-primary);
+}
+
+/* ═══ Badges ══════════════════════════════════════════════════ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-badge);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge.new       { background: rgba(167,139,250,0.2); color: var(--state-new); }
+.badge.ready     { background: rgba(96,165,250,0.2);  color: var(--state-ready); }
+.badge.running   { background: rgba(52,211,153,0.2);  color: var(--state-running); }
+.badge.waiting   { background: rgba(251,191,36,0.2);  color: var(--state-waiting); }
+.badge.terminated { background: rgba(107,114,128,0.2); color: var(--state-terminated); }
+
+.badge.running {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+  50% { box-shadow: 0 0 8px 2px rgba(52,211,153,0.3); }
+}
+
+/* ═══ Tables ══════════════════════════════════════════════════ */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  color: var(--text-primary);
+}
+.table tr:hover td {
+  background: rgba(255,255,255,0.03);
+}
+.table td.mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* ═══ Cards ═══════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-md);
+}
+
+/* ═══ Section Headers ════════════════════════════════════════ */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.section-header h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ═══ Control Bar ═════════════════════════════════════════════ */
+.control-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.control-group label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.control-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-subtle);
+}
+
+/* ═══ Frame Grid (Memory) ════════════════════════════════════ */
+.frame-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 4px;
+}
+
+.frame-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  transition: all var(--transition-fast);
+}
+.frame-cell.occupied {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.frame-cell .frame-id {
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+
+/* ═══ Ready Queue Visualization ══════════════════════════════ */
+.ready-queue {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: var(--space-sm);
+  background: var(--bg-panel);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+.ready-queue__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(96,165,250,0.3);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.ready-queue__arrow {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.ready-queue__empty {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 11px;
+}
+
+/* ═══ Decision Log ═══════════════════════════════════════════ */
+.log-entry {
+  display: flex;
+  gap: var(--space-sm);
+  padding: 4px 0;
+  font-size: 11px;
+  line-height: 1.5;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+.log-entry__tick {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  min-width: 42px;
+  flex-shrink: 0;
+}
+.log-entry__msg {
+  color: var(--text-primary);
+}
+
+/* ═══ Metric Card ════════════════════════════════════════════ */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-sm);
+}
+.metric-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-sm) var(--space-md);
+}
+.metric-card__value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+.metric-card__label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* ═══ Connection Overlay ═════════════════════════════════════ */
+.connection-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+.connection-overlay__card {
+  background: var(--bg-window);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-window);
+  padding: var(--space-xl) 40px;
+  text-align: center;
+  box-shadow: var(--shadow-elevated);
+}
+.connection-overlay__card h2 {
+  font-size: 16px;
+  margin-bottom: var(--space-sm);
+}
+.connection-overlay__card p {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: var(--space-lg) auto;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══ Sync Cards ═════════════════════════════════════════════ */
+.sync-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+.sync-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+.sync-card__name {
+  font-weight: 600;
+  font-size: 12px;
+}
+.sync-card__status {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.sync-card__status.locked {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
+}
+.sync-card__status.unlocked {
+  background: rgba(52,211,153,0.15);
+  color: #34d399;
+}

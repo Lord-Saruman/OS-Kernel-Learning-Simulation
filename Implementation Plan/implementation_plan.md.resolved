@@ -1,0 +1,78 @@
+# Goal Description
+The objective is to implement **Phase 7 (API Bridge)** and **Phase 8 (React Dashboard)** for the Mini OS Kernel Simulator, as outlined in the system architecture.
+
+We will:
+1. Embed the lightweight **Crow** C++ web framework into the simulation engine to provide REST endpoints and a WebSocket state broadcaster.
+2. Build a **React + TypeScript** frontend using Vite, styled dynamically to resemble a modern **Windows 11 interface** (using glassmorphism, a taskbar, and draggable/dockable windows for each OS module panel).
+3. Connect the frontend to the C++ engine so the simulation logic runs entirely in C++, while the frontend provides a rich, interactive "OS" view.
+
+## User Review Required
+> [!IMPORTANT]
+> - Integrating **Crow** requires modifications to the CMake setup (fetching dependencies via `FetchContent`).
+> - The UI will use **TailwindCSS** to rapidly build the Windows aesthetic. Please confirm you are okay with Tailwind.
+> - The integration will completely replace the current CLI loop in `main.cpp` with a long-running web server.
+
+## Proposed Changes
+
+---
+
+### Layer 2 — API Bridge (C++ Engine)
+
+We will modify the engine to host a local HTTP and WebSocket server using Crow.
+
+#### [MODIFY] [engine/CMakeLists.txt](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/engine/CMakeLists.txt)
+- Uncomment and implement `FetchContent` for `Crow` and `nlohmann_json`.
+- Add `bridge_lib` target.
+
+#### [NEW] [engine/bridge/RestServer.h](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/engine/bridge/RestServer.h)
+- Declare `class RestServer` that encapsulates a `crow::SimpleApp`.
+- Declares endpoints for controlling the `SimulationState` (start, step, mode, quantum, policies, load workload).
+
+#### [NEW] [engine/bridge/RestServer.cpp](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/engine/bridge/RestServer.cpp)
+- Implements the 12 REST routes mapped to `/sim/...`, `/process/...`, `/scheduler/...`, etc.
+- Serializes `SimulationState` via `nlohmann/json`.
+
+#### [NEW] [engine/bridge/WsServer.h](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/engine/bridge/WsServer.h)
+- Implements WebSocket routes via Crow. Subscribes to the `EventBus` for `TICK_ADVANCED` events to broadcast the entire simulated state to connected UI clients.
+
+#### [MODIFY] [engine/main.cpp](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/engine/main.cpp)
+- Remove the step/auto console demo.
+- Instantiate `RestServer` and start the Crow application loop on port 8080 (REST) and 8081 (WS, or multiplexed on 8080 if using Crow WS).
+
+---
+
+### Layer 3 — React Dashboard (Windows Interface)
+
+We will create a Vite + React + TS project inside the `dashboard/` directory.
+
+#### [NEW] [dashboard/package.json](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/dashboard/package.json)
+- Bootstrap with `npx create-vite@latest dashboard --template react-ts`.
+- Add dependencies: `tailwindcss`, `lucide-react`, `recharts`, and optionally a drag-and-drop library (e.g., `react-rnd`) for moving windows.
+
+#### [NEW] [dashboard/src/App.tsx](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/dashboard/src/App.tsx)
+- Sets up the global Windows desktop background.
+- Mounts the taskbar (`SimControlBar`) at the bottom.
+- Manages an array of currently open "Windows" (Process, Memory, Scheduler, Sync, Decision Log).
+
+#### [NEW] [dashboard/src/hooks/useSimState.ts](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/dashboard/src/hooks/useSimState.ts)
+- Connects to `ws://localhost:8080/ws` and returns the global state JSON, forcing a single re-render per tick.
+
+#### [NEW] [dashboard/src/components/Taskbar.tsx](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/dashboard/src/components/Taskbar.tsx)
+- Replaces standard `SimControlBar`. Looks like Windows Taskbar. Shows time, start menu, and icons corresponding to internal engine panels. Contains start/pause/step controls.
+
+#### [NEW] [dashboard/src/components/DesktopWindow.tsx](file:///e:/Semester%204/OS-CEP/OS-Kernel-Learning-Simulation/os-simulator/dashboard/src/components/DesktopWindow.tsx)
+- Reusable component providing Windows 11 glass UI, title bar, minimize, maximize, and close buttons wrapper around panels.
+
+*Other Component Panels will follow the requirements outlined in the SDD (ProcessPanel, SchedulerPanel, etc.), rendered cleanly using Windows UI design systems (Mica material, fluent icons).*
+
+## Open Questions
+- There's a comment regarding `websocketpp` in the SDD, but `Crow` recently supports WebSockets out-of-the-box natively. Using Crow for BOTH REST and WS on a single port (e.g. 8080) is substantially easier and reduces dependency bloat. Are you perfectly fine with using Crow's built-in WebSockets rather than bringing in `websocketpp`?
+- Should we use `Tailwind CSS` for styling the Windows UI dashboard? The guidelines mention avoiding Tailwind unless requested, but here you requested a specific complex styling (Windows UX) and it is standard for Vite/React web apps. Let me know if you prefer plain Vanilla CSS instead!
+
+## Verification Plan
+
+### Automated Tests
+- Once C++ REST integration is done, we will execute direct `curl` or `Invoke-RestMethod` commands against `http://localhost:8080/sim/step` to ensure engine advances logic correctly.
+
+### Manual Verification
+- We will boot up the Vite server natively via `npm run dev` and test the connection against the running C++ executable to verify state streams into the UI properly.
