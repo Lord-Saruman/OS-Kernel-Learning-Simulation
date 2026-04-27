@@ -308,8 +308,84 @@ struct RestServer::Impl {
                     memoryManager.setPolicy(policy);
                     state.activeReplacement = memoryManager.getActivePolicyName();
                 }
+                broadcastState();
                 auto resp = okResponse({
                     {"active_replacement", state.activeReplacement}
+                });
+                addCorsHeaders(resp);
+                return resp;
+            } catch (const std::exception& e) {
+                auto resp = errorResponse(400, e.what());
+                addCorsHeaders(resp);
+                return resp;
+            }
+        });
+
+        // ─── POST /memory/frames ────────────────────────────
+        CROW_ROUTE(app, "/memory/frames").methods(crow::HTTPMethod::POST)
+        ([this](const crow::request& req) {
+            try {
+                auto body = json::parse(req.body);
+                uint32_t frameCount = body.value("frame_count", 16u);
+                if (frameCount != 4u && frameCount != 6u &&
+                    frameCount != 8u && frameCount != 16u) {
+                    auto resp = errorResponse(400, "frame_count must be one of: 4, 6, 8, 16");
+                    addCorsHeaders(resp);
+                    return resp;
+                }
+
+                // Apply new runtime frame count and reset the simulation so
+                // frame table + page tables remain consistent.
+                clock.setFrameCount(frameCount);
+                clock.reset();
+                broadcastState();
+
+                auto resp = okResponse({
+                    {"frame_count", frameCount},
+                    {"status", toString(state.status)}
+                });
+                addCorsHeaders(resp);
+                return resp;
+            } catch (const std::exception& e) {
+                auto resp = errorResponse(400, e.what());
+                addCorsHeaders(resp);
+                return resp;
+            }
+        });
+
+        // ─── POST /memory/access_sequence ────────────────────
+        // Pushes an explicit virtual-page reference string into the
+        // MemoryManager. Lets the API/dashboard drive deterministic
+        // textbook scenarios (e.g., Silberschatz: FIFO=15, LRU=12).
+        // Body: { "vpns": [7,0,1,2,0,3,...] }
+        CROW_ROUTE(app, "/memory/access_sequence").methods(crow::HTTPMethod::POST)
+        ([this](const crow::request& req) {
+            try {
+                auto body = json::parse(req.body);
+                if (!body.contains("vpns") || !body["vpns"].is_array()) {
+                    auto resp = errorResponse(400,
+                        "Body must contain a 'vpns' array of non-negative integers");
+                    addCorsHeaders(resp);
+                    return resp;
+                }
+                std::vector<uint32_t> vpns;
+                vpns.reserve(body["vpns"].size());
+                for (const auto& v : body["vpns"]) {
+                    if (!v.is_number_unsigned() && !(v.is_number_integer() && v.get<int64_t>() >= 0)) {
+                        auto resp = errorResponse(400,
+                            "All VPNs must be non-negative integers");
+                        addCorsHeaders(resp);
+                        return resp;
+                    }
+                    vpns.push_back(v.get<uint32_t>());
+                }
+                {
+                    std::unique_lock<std::shared_mutex> lock(state.stateMutex);
+                    memoryManager.setAccessSequence(vpns);
+                }
+                broadcastState();
+                auto resp = okResponse({
+                    {"sequence_length", static_cast<int>(vpns.size())}
                 });
                 addCorsHeaders(resp);
                 return resp;
@@ -474,6 +550,7 @@ void RestServer::start(uint16_t port) {
     std::cout << "  POST /process/create|kill\n";
     std::cout << "  POST /scheduler/policy|quantum\n";
     std::cout << "  POST /memory/policy\n";
+    std::cout << "  POST /memory/frames\n";
     std::cout << "  POST /workload/load\n";
     std::cout << "  GET  /state/snapshot\n";
     std::cout << "  WS   /ws\n\n";

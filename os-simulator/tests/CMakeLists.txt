@@ -112,3 +112,20 @@ target_link_libraries(test_engine_integration
     sync_manager_lib
 )
 add_test(NAME EngineIntegrationTests COMMAND test_engine_integration)
+
+# ── Test: Memory Compare — engine-only FIFO vs LRU (Phase 4 deep-dive) ──
+# Locks in textbook reference-string fault counts and the full-pipeline
+# behaviour without touching the API or the React dashboard. If any other
+# layer reports a wrong page-fault count, run THIS suite first to confirm
+# the engine itself is correct.
+add_executable(test_memory_compare test_memory_compare.cpp)
+target_include_directories(test_memory_compare PRIVATE ${ENGINE_INCLUDE_DIR})
+target_link_libraries(test_memory_compare
+    PRIVATE
+    GTest::gtest_main
+    core_lib
+    process_manager_lib
+    scheduler_lib
+    memory_manager_lib
+)
+add_test(NAME MemoryCompareTests COMMAND test_memory_compare)

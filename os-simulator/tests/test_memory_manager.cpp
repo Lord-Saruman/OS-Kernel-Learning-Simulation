@@ -667,22 +667,72 @@ TEST_F(MemoryManagerTest, NoRunningProcess_NoAccess) {
     EXPECT_EQ(state.memMetrics.totalPageFaults, 0u);
 }
 
-TEST_F(MemoryManagerTest, RoundRobinAccess_CyclesThroughPages) {
+TEST_F(MemoryManagerTest, DefaultAccess_UsesLocalityOfReference) {
     memMgr.initializeFrameTable(state, 8);
     int pid = createAndAdmitProcess("test_proc", 3);
     makeRunning(pid);
 
-    // Don't set explicit sequence — use default round-robin
-    // 3 pages: should access VPN 0, 1, 2, 0, 1, 2, ...
-    for (int i = 0; i < 6; i++) {
+    // Tick 1: first default access faults on VPN 0.
+    memMgr.onTick(state, bus);
+    EXPECT_EQ(state.memMetrics.totalPageFaults, 1u);
+    state.currentTick++;
+
+    // Tick 2: immediate re-access should hit same local page.
+    memMgr.onTick(state, bus);
+    EXPECT_EQ(state.memMetrics.totalPageFaults, 1u);
+    state.currentTick++;
+
+    // Continue a few more ticks: locality still limits distinct pages.
+    for (int i = 0; i < 4; i++) {
         memMgr.onTick(state, bus);
         state.currentTick++;
     }
 
-    // First 3 accesses: faults (loading VPN 0, 1, 2)
-    // Next 3 accesses: hits (VPN 0, 1, 2 already loaded)
-    EXPECT_EQ(state.memMetrics.totalPageFaults, 3u);
-    EXPECT_EQ(state.memMetrics.occupiedFrames, 3u);
+    EXPECT_LE(state.memMetrics.totalPageFaults, 3u);
+    EXPECT_LE(state.memMetrics.occupiedFrames, 3u);
+}
+
+TEST_F(MemoryManagerTest, DefaultLocalityPattern_LRUFaultsRemainComparableToFIFO) {
+    auto runDefaultPattern = [&](const std::string& policyName) {
+        SimulationState localState;
+        EventBus localBus;
+        ProcessManager localProcMgr;
+        MemoryManager localMemMgr;
+
+        localMemMgr.setPolicy(policyName);
+        localMemMgr.initializeFrameTable(localState, 4);
+
+        ProcessSpec spec;
+        spec.name = policyName + "_locality_test";
+        spec.type = ProcessType::CPU_BOUND;
+        spec.priority = 5;
+        spec.cpuBurst = 80;
+        spec.ioBurstDuration = 0;
+        spec.memoryRequirement = 8;
+
+        int pid = localProcMgr.createProcess(localState, localBus, spec);
+        localProcMgr.onTick(localState, localBus);
+        localState.processTable[pid].state = ProcessState::RUNNING;
+        localState.runningPID = pid;
+        localState.readyQueue.clear();
+
+        for (int i = 0; i < 80; i++) {
+            localMemMgr.onTick(localState, localBus);
+            localState.currentTick++;
+        }
+
+        return localState.memMetrics.totalPageFaults;
+    };
+
+    uint32_t fifoFaults = runDefaultPattern("FIFO");
+    uint32_t lruFaults = runDefaultPattern("LRU");
+
+    uint32_t diff = (lruFaults > fifoFaults) ? (lruFaults - fifoFaults) : (fifoFaults - lruFaults);
+
+    EXPECT_GT(fifoFaults, 0u);
+    EXPECT_GT(lruFaults, 0u);
+    EXPECT_LE(diff, 2u)
+        << "Default locality pattern should keep FIFO and LRU fault counts comparable";
 }
 
 TEST_F(MemoryManagerTest, MultipleProcesses_SeparatePageTables) {

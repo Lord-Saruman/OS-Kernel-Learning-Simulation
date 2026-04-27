@@ -69,22 +69,40 @@ From the dashboard, you can:
 
 ## 🧪 Running Tests
 
-The C++ engine is fully tested using **Google Test (gtest)**. The tests verify all modules, including the Process Manager, Scheduler, Memory Manager, Sync Manager, and the Clock Controller.
+The simulator is verified at three layers — engine (Google Test),
+REST API (PowerShell), and a manual frontend matrix — each with
+explicit expected outputs for every policy / frame-count / scheduler
+combination.
 
-To run the test suite:
+> Full test catalogue, expected values, and a written explanation of
+> why FIFO and LRU sometimes tie on the default workload (plus a
+> textbook-correct LRU demo) live in
+> [`os-simulator/tests/TESTING.md`](os-simulator/tests/TESTING.md).
+
+### Layer 1 — Engine tests (Google Test)
 
 ```powershell
-# Navigate to the build directory
 cd os-simulator\build
-
-# Rebuild all targets (including tests)
 cmake --build . --config Release
-
-# Run CTest
 ctest -C Release --output-on-failure
 ```
 
-All 8 test suites should pass cleanly (100% success rate).
+All **9** test suites should pass — including `MemoryCompareTests`,
+which locks in the textbook FIFO / LRU fault counts (Silberschatz,
+Belady's Anomaly) for every supported frame count.
+
+### Layer 2 — API integration tests
+
+With `os_simulator.exe` running:
+
+```powershell
+cd os-simulator\tests\api
+.\test_api_workflows.ps1
+```
+
+All **39** assertions should pass. Scenario 9 drives a textbook
+reference string through the live REST API and confirms the canonical
+LRU win (FIFO=10, LRU=8 at 4 frames).
 
 ---
 

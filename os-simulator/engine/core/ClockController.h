@@ -61,6 +61,7 @@ public:
     void setMode(SimMode mode);
     void setAutoSpeedMs(uint32_t ms);
     void setTimeQuantum(uint32_t quantum);
+    void setFrameCount(uint32_t frameCount);
 
     // Request one step tick while in STEP mode.
     // Works when status is RUNNING or PAUSED (allows step-while-paused UX).

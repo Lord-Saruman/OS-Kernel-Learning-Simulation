@@ -183,6 +183,15 @@ void ClockController::setTimeQuantum(uint32_t quantum) {
     runtimeConfig_.timeQuantum = quantum;
 }
 
+void ClockController::setFrameCount(uint32_t frameCount) {
+    if (frameCount < 4) {
+        frameCount = 4;
+    }
+
+    std::lock_guard<std::mutex> lock(impl_->controlMutex);
+    runtimeConfig_.frameCount = frameCount;
+}
+
 bool ClockController::requestStep() {
     std::lock_guard<std::mutex> lock(impl_->controlMutex);
 

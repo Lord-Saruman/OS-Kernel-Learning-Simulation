@@ -40,7 +40,10 @@ MemoryManager::MemoryManager()
     : status_(ModuleStatus::IDLE)
     , activePolicy_(std::make_unique<FIFOPolicy>())
     , totalMemoryAccesses_(0)
-    , roundRobinCounter_(0)
+    , processLastVpn_()
+    , processPrevVpn_()
+    , processHotBaseVpn_()
+    , processAccessCounts_()
     , accessSequence_()
     , accessSequenceIdx_(0)
 {}
@@ -57,7 +60,10 @@ void MemoryManager::reset() {
     status_ = ModuleStatus::IDLE;
     activePolicy_ = std::make_unique<FIFOPolicy>();
     totalMemoryAccesses_ = 0;
-    roundRobinCounter_ = 0;
+    processLastVpn_.clear();
+    processPrevVpn_.clear();
+    processHotBaseVpn_.clear();
+    processAccessCounts_.clear();
     accessSequence_.clear();
     accessSequenceIdx_ = 0;
 }
@@ -178,7 +184,7 @@ void MemoryManager::simulateMemoryAccess(SimulationState& state, EventBus& bus) 
     if (pt.entries.empty()) return;
 
     // Determine which VPN to access this tick
-    uint32_t vpn = getNextVPN(pcb.memoryRequirement);
+    uint32_t vpn = getNextVPN(state.runningPID, pcb.memoryRequirement);
 
     // Safety check: VPN must be within bounds
     if (vpn >= static_cast<uint32_t>(pt.entries.size())) {
@@ -485,7 +491,7 @@ void MemoryManager::evictPage(SimulationState& state, EventBus& bus,
     (void)bus;
 }
 
-uint32_t MemoryManager::getNextVPN(uint32_t memoryRequirement) {
+uint32_t MemoryManager::getNextVPN(int pid, uint32_t memoryRequirement) {
     if (memoryRequirement == 0) return 0;
 
     // Check if we have an explicit access sequence
@@ -495,8 +501,69 @@ uint32_t MemoryManager::getNextVPN(uint32_t memoryRequirement) {
         return vpn;
     }
 
-    // Default: round-robin scan through process's virtual pages
-    uint32_t vpn = static_cast<uint32_t>(roundRobinCounter_ % memoryRequirement);
-    roundRobinCounter_++;
+    if (memoryRequirement == 1) {
+        processLastVpn_[pid] = 0;
+        processPrevVpn_[pid] = 0;
+        processHotBaseVpn_[pid] = 0;
+        processAccessCounts_[pid]++;
+        return 0;
+    }
+
+    uint64_t& accessCount = processAccessCounts_[pid];
+    auto lastIt = processLastVpn_.find(pid);
+
+    // First touch for each process starts in its own local working set.
+    if (lastIt == processLastVpn_.end()) {
+        processLastVpn_[pid] = 0;
+        processPrevVpn_[pid] = 0;
+        processHotBaseVpn_[pid] = 0;
+        accessCount++;
+        return 0;
+    }
+
+    uint32_t lastVpn = lastIt->second % memoryRequirement;
+    // Keep one immediate re-access so temporal locality is always present.
+    if (accessCount == 1) {
+        accessCount++;
+        processLastVpn_[pid] = lastVpn;
+        return lastVpn;
+    }
+
+    // Deterministic per-process pseudo-random stream (reproducible across runs).
+    uint64_t pidAbs = static_cast<uint64_t>(pid < 0 ? -pid : pid);
+    uint64_t stream = accessCount * 1103515245ULL + pidAbs * 12345ULL + 0x9E3779B97F4A7C15ULL;
+    uint32_t roll = static_cast<uint32_t>(stream % 100ULL);
+    uint32_t prevVpn = processPrevVpn_[pid] % memoryRequirement;
+    uint32_t hotBase = processHotBaseVpn_[pid] % memoryRequirement;
+
+    // Shift working-set window occasionally to avoid being fully static
+    // while keeping strong temporal locality in between shifts.
+    if ((accessCount % 24ULL) == 0ULL) {
+        uint32_t shift = static_cast<uint32_t>((pidAbs % 3ULL) + 1ULL);
+        hotBase = (hotBase + shift) % memoryRequirement;
+        processHotBaseVpn_[pid] = hotBase;
+    }
+
+    uint32_t hotWindow = std::min<uint32_t>(memoryRequirement, 3U);
+
+    uint32_t vpn = lastVpn;
+    if (roll < 45) {
+        // 45%: immediate temporal locality on the most recent page.
+        vpn = lastVpn;
+    } else if (roll < 75) {
+        // 30%: temporal locality on the second-most-recent page.
+        vpn = prevVpn;
+    } else if (roll < 95) {
+        // 20%: pick from a tiny hot window.
+        uint32_t offset = static_cast<uint32_t>((stream / 5ULL) % hotWindow);
+        vpn = (hotBase + offset) % memoryRequirement;
+    } else {
+        // 5%: occasional global jump.
+        vpn = static_cast<uint32_t>((stream / 11ULL) % memoryRequirement);
+    }
+
+    accessCount++;
+    processPrevVpn_[pid] = lastVpn;
+    processLastVpn_[pid] = vpn;
     return vpn;
 }

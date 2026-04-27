@@ -32,8 +32,8 @@
  *
  * Memory access model:
  *   Each tick, the running process accesses one virtual page.
- *   By default, VPN is determined by round-robin scan:
- *       vpn = accessCounter % memoryRequirement
+ *   By default, VPN selection is tracked per process and favors locality
+ *   of reference: repeated nearby accesses with occasional jumps.
  *   For testing, an explicit access sequence can be set via
  *   setAccessSequence() to drive textbook reference strings.
  */
@@ -42,6 +42,7 @@
 #include <memory>
 #include <cstdint>
 #include <vector>
+#include <unordered_map>
 
 #include "core/ISimModule.h"
 #include "modules/memory/IReplacementPolicy.h"
@@ -129,8 +130,8 @@ public:
 
     /**
      * Set an explicit sequence of VPNs to access on successive ticks.
-     * Overrides the default round-robin pattern. When the sequence is
-     * exhausted, falls back to round-robin.
+     * Overrides the default locality-based pattern. When the sequence is
+     * exhausted, falls back to the locality-based default pattern.
      *
      * Used by unit tests to drive textbook page reference strings
      * for deterministic validation of FIFO/LRU fault counts.
@@ -143,7 +144,10 @@ private:
     ModuleStatus status_;
     std::unique_ptr<IReplacementPolicy> activePolicy_;
     uint64_t totalMemoryAccesses_;   // For pageFaultRate calculation
-    uint64_t roundRobinCounter_;     // For default round-robin VPN selection
+    std::unordered_map<int, uint32_t> processLastVpn_;
+    std::unordered_map<int, uint32_t> processPrevVpn_;
+    std::unordered_map<int, uint32_t> processHotBaseVpn_;
+    std::unordered_map<int, uint64_t> processAccessCounts_;
 
     // Explicit access sequence for testing
     std::vector<uint32_t> accessSequence_;
@@ -207,9 +211,9 @@ private:
 
     /**
      * Determine the VPN to access this tick for the given process.
-     * Uses explicit access sequence if set, else round-robin.
+     * Uses explicit access sequence if set, else locality-based access.
      */
-    uint32_t getNextVPN(uint32_t memoryRequirement);
+    uint32_t getNextVPN(int pid, uint32_t memoryRequirement);
 
     /**
      * Factory method — creates a policy instance from name string.

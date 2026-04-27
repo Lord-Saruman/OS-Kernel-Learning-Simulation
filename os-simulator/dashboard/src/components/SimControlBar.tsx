@@ -52,6 +52,10 @@ export const SimControlBar: React.FC<Props> = ({ state, control }) => {
     setTimeout(() => setWorkloadValue(''), 500);
   };
 
+  const handleFrameCountChange = async (frameCount: number) => {
+    await control.setFrameCount(frameCount);
+  };
+
   return (
     <div className="control-bar">
       {/* ── Play / Pause / Step / Reset ── */}
@@ -153,6 +157,22 @@ export const SimControlBar: React.FC<Props> = ({ state, control }) => {
         >
           <option value="FIFO">FIFO</option>
           <option value="LRU">LRU</option>
+        </select>
+      </div>
+
+      {/* ── Physical Frames ── */}
+      <div className="control-group">
+        <label>Frames</label>
+        <select
+          className="select"
+          value={state.mem_metrics.total_frames}
+          onChange={(e) => handleFrameCountChange(Number(e.target.value))}
+          title="Changing frames resets simulation"
+        >
+          <option value={4}>4</option>
+          <option value={6}>6</option>
+          <option value={8}>8</option>
+          <option value={16}>16</option>
         </select>
       </div>
 

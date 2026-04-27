@@ -77,6 +77,9 @@ export function useSimControl() {
     setMemoryPolicy: (policy: string) =>
       post('/memory/policy', { policy }),
 
+    setFrameCount: (frameCount: number) =>
+      post('/memory/frames', { frame_count: frameCount }),
+
     loadWorkload: (scenario: string) =>
       post('/workload/load', { scenario }),
 

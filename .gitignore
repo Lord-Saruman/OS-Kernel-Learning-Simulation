@@ -32,3 +32,6 @@ node_modules/
 implementation plans/
 walkthroughs/
 build_phase*/
+
+# API test harness: redirect logs from ad-hoc engine runs
+os-simulator/tests/api/*.log
