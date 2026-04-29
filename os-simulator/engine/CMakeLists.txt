@@ -98,6 +98,14 @@ target_link_libraries(bridge_lib PUBLIC
     nlohmann_json::nlohmann_json
 )
 
+if(WIN32)
+    target_link_libraries(bridge_lib PUBLIC ws2_32 mswsock)
+endif()
+
 # ── Main Executable ──────────────────────────────────────────
 add_executable(os_simulator main.cpp)
 target_link_libraries(os_simulator PRIVATE bridge_lib)
+
+if(WIN32)
+    target_link_libraries(os_simulator PRIVATE ws2_32 mswsock)
+endif()

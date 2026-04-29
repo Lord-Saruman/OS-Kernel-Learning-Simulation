@@ -35,3 +35,6 @@ build_phase*/
 
 # API test harness: redirect logs from ad-hoc engine runs
 os-simulator/tests/api/*.log
+
+# Graphify Output
+graphify-out/
