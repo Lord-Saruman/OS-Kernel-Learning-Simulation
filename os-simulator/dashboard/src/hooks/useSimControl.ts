@@ -80,6 +80,9 @@ export function useSimControl() {
     setFrameCount: (frameCount: number) =>
       post('/memory/frames', { frame_count: frameCount }),
 
+    setAccessSequence: (vpns: number[]) =>
+      post('/memory/access_sequence', { vpns }),
+
     loadWorkload: (scenario: string) =>
       post('/workload/load', { scenario }),
 

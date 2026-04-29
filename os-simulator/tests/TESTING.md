@@ -188,9 +188,10 @@ self-contained: click *Reset*, set the controls in the order shown, and
 click *Step* the requested number of times. The expected numbers come
 straight from layer 2 and are reproducible.
 
-> Tip: the dashboard does not yet have a UI for `/memory/access_sequence`,
-> so the textbook demo is driven from the browser's DevTools console
-> with one `fetch` call (snippet at the bottom of the table).
+> Tip: use the **LRU vs FIFO** button in the dashboard control bar for the
+> textbook demo. It loads the Silberschatz reference string through
+> `/memory/access_sequence`, creates the demo process, and leaves the
+> simulator ready to step.
 
 | # | What to demo | Controls | Steps | Look at | Expected |
 |---|--------------|----------|-------|---------|----------|
@@ -200,18 +201,7 @@ straight from layer 2 and are reproducible.
 | F4 | Multi-process pressure LRU | Same as F3 with Mem=LRU | 50 | Memory metrics | `total_page_faults = 27`, `total_replacements = 23` (LRU == FIFO; explained above) |
 | F5 | Frame-count sweep FIFO | Repeat F1 with Frames=4, 6, 8, 16 | 20 | Memory metrics | `total_page_faults = 3` for every frame size |
 | F6 | LRU "advantage" demo (current pattern) | Frames=4, Sched=FCFS, Mem=FIFO/LRU. Single proc, cpu=200, mem=8 | 100 | Memory metrics | FIFO=8, LRU=9 (current locality model — 1-fault artifact) |
-| F7 | **Textbook LRU win (use this on stage)** | Frames=4, Sched=FCFS, Mem=FIFO. *Then* paste the snippet below in DevTools to push the reference string. *Then* create one proc with cpu=100 mem=8. | 20 | Memory metrics | FIFO=10. Reset, switch Mem=LRU, repeat → LRU=8 |
-
-DevTools snippet for F7 (paste in the Console tab of the dashboard
-page after a Reset):
-
-```javascript
-fetch('http://localhost:8080/memory/access_sequence', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ vpns: [7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1] })
-}).then(r => r.json()).then(console.log);
-```
+| F7 | **Textbook LRU win (use this on stage)** | Select Mem=FIFO, click **LRU vs FIFO**, then step. Reset, select Mem=LRU, click **LRU vs FIFO**, then step again. | 20 | Memory metrics | FIFO=10. Reset, switch Mem=LRU, repeat → LRU=8 |
 
 After running F7 with both policies you can show the audience the
 canonical Silberschatz numbers — same engine, same dashboard, same

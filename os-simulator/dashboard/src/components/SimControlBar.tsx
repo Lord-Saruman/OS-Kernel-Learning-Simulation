@@ -15,6 +15,10 @@ export const SimControlBar: React.FC<Props> = ({ state, control }) => {
   const isPaused = state.status === 'PAUSED';
   const isIdle = state.status === 'IDLE';
   const [workloadValue, setWorkloadValue] = useState('');
+  const textbookLruWinSequence = [
+    7, 0, 1, 2, 0, 3, 0, 4, 2, 3,
+    0, 3, 2, 1, 2, 0, 1, 7, 0, 1,
+  ];
 
   const handleStart = async () => {
     await control.start();
@@ -54,6 +58,23 @@ export const SimControlBar: React.FC<Props> = ({ state, control }) => {
 
   const handleFrameCountChange = async (frameCount: number) => {
     await control.setFrameCount(frameCount);
+  };
+
+  const handleTextbookLruWin = async () => {
+    // This is F7 from tests/TESTING.md: with 4 frames, FIFO=10 and LRU=8.
+    const policy = state.active_replacement;
+    await control.setFrameCount(4); // Resets the simulation.
+    await control.setMode('STEP');
+    await control.setSchedulerPolicy('FCFS');
+    await control.setMemoryPolicy(policy);
+    await control.setAccessSequence(textbookLruWinSequence);
+    await control.createProcess({
+      name: `Textbook_${policy}`,
+      type: 'CPU_BOUND',
+      priority: 5,
+      cpu_burst: 100,
+      memory_requirement: 8,
+    });
   };
 
   return (
@@ -189,6 +210,13 @@ export const SimControlBar: React.FC<Props> = ({ state, control }) => {
         </button>
         <button className="btn sm" onClick={() => handleWorkloadChange('mixed')} title="Load 8 mixed processes">
           <FolderOpen size={12} /> Mixed (8)
+        </button>
+        <button
+          className="btn sm"
+          onClick={handleTextbookLruWin}
+          title="Load Silberschatz sequence from TESTING.md. Step 20 ticks: FIFO=10, LRU=8."
+        >
+          <FolderOpen size={12} /> LRU vs FIFO
         </button>
         <div className="control-divider" style={{ margin: '0 4px' }} />
         <button className="btn sm" onClick={() => control.startSyncDemo(true)} title="Run Race Condition Demo with Mutex">
