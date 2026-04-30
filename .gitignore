@@ -38,3 +38,6 @@ os-simulator/tests/api/*.log
 
 # Graphify Output
 graphify-out/
+
+# Assets
+assets/
