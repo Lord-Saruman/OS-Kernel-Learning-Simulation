@@ -23,7 +23,7 @@
 
 **MiniOS** is a fully interactive, browser-based operating system kernel simulator built from the ground up with a **multithreaded C++17 engine** and a **real-time React dashboard**. It doesn't just *describe* OS concepts — it **runs them live**, tick by tick, and lets you *see* every scheduling decision, every page fault, every race condition as it happens.
 
-Built as a Complex Engineering Problem (CEP) for CS-330 Operating Systems at FAST-NUCES, this project goes far beyond a university assignment — it's a complete **OS learning platform** that any student can use to finally *understand* what their textbook is trying to say.
+It's a complete **OS learning platform** that any student can use to finally *understand* what their textbook is trying to say.
 
 ---
 
