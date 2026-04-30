@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/CMake-3.20+-064F8C?style=for-the-badge&logo=cmake&logoColor=white" alt="CMake"/>
   <img src="https://img.shields.io/badge/Tests-9_Suites_|_39_API-success?style=for-the-badge" alt="Tests"/>
   <img src="https://img.shields.io/badge/License-GPL_v3-yellow?style=for-the-badge" alt="License"/>
+  <a href="https://github.com/Lord-Saruman/OS-Kernel-Learning-Simulation/discussions"><img src="https://img.shields.io/badge/Discussions-Join_Community-blue?style=for-the-badge&logo=github&logoColor=white" alt="Discussions"/></a>
 </p>
 
 ---
@@ -342,6 +343,8 @@ OS-Kernel-Learning-Simulation/
 ## 🤝 Contributing
 
 We welcome contributions! Whether it's a new scheduling algorithm, a UI improvement, or a bug fix — check out our [**Contributing Guide**](CONTRIBUTING.md) to get started.
+
+Have questions, ideas, or want to share how you're using MiniOS? Join us in [**💬 GitHub Discussions**](https://github.com/Lord-Saruman/OS-Kernel-Learning-Simulation/discussions).
 
 The Strategy Pattern architecture means you can add new algorithms with **zero changes** to existing modules.
 
